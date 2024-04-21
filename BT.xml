@@ -1,37 +1,16 @@
 <?xml version="1.0"?>
-<root main_tree_to_execute="BehaviorTree">
+<root main_tree_to_execute="MainTree">
     <!-- ////////// -->
-    <BehaviorTree ID="BehaviorTree">
-        <RetryUntilSuccessful num_attempts="2">
-            <Sequence>
-                <SequenceStar>
-                    <Action ID="PoseSub" Pose_sub="{point}" topic1_name="/bag_point"/>
-                    <Action ID="Detect" detect="{pose}" topic1_name="/pose_detect"/>
-                </SequenceStar>
-                <Control ID="RecoveryNode" number_of_retries="2">
-                    <RetryUntilSuccessful num_attempts="2">
-                        <Action ID="Grasp" Obj_Point="{point}" Pose="{pose}"/>
-                    </RetryUntilSuccessful>
-                    <Action ID="BackUp" backup_dist="0.5" backup_speed="0.3" server_name="" server_timeout="" time_allowance=""/>
-                </Control>
-                <SequenceStar name="">
-                    <KeepRunningUntilFailure>
-                        <SubTree ID="FollowPoint" __shared_blackboard="True"/>
-                    </KeepRunningUntilFailure>
-                    <Action ID="Remove_obj"/>
-                </SequenceStar>
-                <Action ID="BackBase"/>
-            </Sequence>
-        </RetryUntilSuccessful>
-    </BehaviorTree>
-    <!-- ////////// -->
-    <BehaviorTree ID="FollowPoint">
+    <BehaviorTree ID="MainTree">
         <Control ID="PipelineSequence" name="NavigateWithReplanning">
             <Decorator ID="RateController" hz="1.0">
                 <Sequence>
-                    <Action ID="Detect_point" output_point="{goal}" topic_name1=""/>
+                    <Action ID="ClearEntireCostmap" server_timeout="" service_name="local_costmap/clear_entirely_local_costmap"/>
                     <Decorator ID="GoalUpdater" input_goal="{goal}" output_goal="{updated_goal}">
-                        <Action ID="ComputePathToPose" goal="{updated_goal}" path="{path}" planner_id="GridBased" server_name="" server_timeout="" start=""/>
+                        <Control ID="RecoveryNode" number_of_retries="1">
+                            <Action ID="ComputePathToPose" goal="{updated_goal}" path="{path}" planner_id="GridBased" server_name="" server_timeout="" start=""/>
+                            <Action ID="ClearEntireCostmap" server_timeout="" service_name="global_costmap/clear_entirely_global_costmap"/>
+                        </Control>
                     </Decorator>
                     <Action ID="TruncatePath" distance="1.0" input_path="{path}" output_path="{truncated_path}"/>
                 </Sequence>
